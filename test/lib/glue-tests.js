@@ -830,6 +830,98 @@ describe('glue', function() {
 
   })
 
+
+  describe('[unpack]', function() {
+
+    it('should pass list elements that match its argument types', function() {
+      var unpack = patch.createObject('unpack', ['f', 'symbol', 's', 'float', 1])
+        , mailbox1 = patch.createObject('testingmailbox')
+        , mailbox2 = patch.createObject('testingmailbox')
+        , mailbox3 = patch.createObject('testingmailbox')
+        , mailbox4 = patch.createObject('testingmailbox')
+        , mailbox5 = patch.createObject('testingmailbox')
+      assert.equal(unpack.outlets.length, 5)
+      unpack.o(0).connect(mailbox1.i(0))
+      unpack.o(1).connect(mailbox2.i(0))
+      unpack.o(2).connect(mailbox3.i(0))
+      unpack.o(3).connect(mailbox4.i(0)) 
+      unpack.o(4).connect(mailbox5.i(0)) 
+
+      unpack.i(0).message([1])
+      assert.deepEqual(mailbox1.received, [[1]])
+
+      unpack.i(0).message([2, 'foo'])
+      assert.deepEqual(mailbox1.received, [[1], [2]])
+      assert.deepEqual(mailbox2.received, [['foo']])
+
+      unpack.i(0).message([4, 'foo', 'bar'])
+      assert.deepEqual(mailbox1.received, [[1], [2], [4]])
+      assert.deepEqual(mailbox2.received, [['foo'], ['foo']])
+      assert.deepEqual(mailbox3.received, [['bar']])
+
+      unpack.i(0).message([4, 'foo', 'bar', 57.5])
+      assert.deepEqual(mailbox1.received, [[1], [2], [4], [4]])
+      assert.deepEqual(mailbox2.received, [['foo'], ['foo'], ['foo']])
+      assert.deepEqual(mailbox3.received, [['bar'], ['bar']])
+      assert.deepEqual(mailbox4.received, [[57.5]])
+
+      unpack.i(0).message([4, 'foo', 'bar', 57.5, -1])
+      assert.deepEqual(mailbox1.received, [[1], [2], [4], [4], [4]])
+      assert.deepEqual(mailbox2.received, [['foo'], ['foo'], ['foo'], ['foo']])
+      assert.deepEqual(mailbox3.received, [['bar'], ['bar'], ['bar']])
+      assert.deepEqual(mailbox4.received, [[57.5], [57.5]])
+      assert.deepEqual(mailbox5.received, [[-1]])
+    })
+
+    it('should ignore elements after its argument list', function() {
+      var unpack = patch.createObject('unpack', ['f'])
+        , mailbox = patch.createObject('testingmailbox')
+      unpack.o(0).connect(mailbox.i(0))
+      assert.equal(unpack.outlets.length, 1)
+
+      unpack.i(0).message([4, 'foo', 'bar', 57.5])
+      assert.deepEqual(mailbox.received, [[4]])
+    })
+
+    it('should by default be [unpack f f]', function() {
+      var unpack = patch.createObject('unpack')
+        , mailbox1 = patch.createObject('testingmailbox')
+        , mailbox2 = patch.createObject('testingmailbox')
+      assert.equal(unpack.outlets.length, 2)
+      unpack.o(0).connect(mailbox1.i(0))
+      unpack.o(1).connect(mailbox2.i(0))
+
+      unpack.i(0).message([1])
+      assert.deepEqual(mailbox1.received, [[1]])
+      assert.deepEqual(mailbox2.received, [])
+      
+      unpack.i(0).message([3, 2])
+      assert.deepEqual(mailbox1.received, [[1], [3]])
+      assert.deepEqual(mailbox2.received, [[2]])
+
+      unpack.i(0).message([7, 8, 2])
+      assert.deepEqual(mailbox1.received, [[1], [3], [7]])
+      assert.deepEqual(mailbox2.received, [[2], [8]])
+    })
+
+    it('should not pass list elements that do not match its argument types', function() {
+      var unpack = patch.createObject('unpack', ['s', 'f'])
+        , mailbox1 = patch.createObject('testingmailbox')
+        , mailbox2 = patch.createObject('testingmailbox')
+      unpack.o(0).connect(mailbox1.i(0))
+      unpack.o(1).connect(mailbox2.i(0))
+
+      unpack.i(0).message([0.5])
+      unpack.i(0).message([0.5, 'string'])
+      assert.equal(mailbox1.received.length, 0)
+      assert.equal(mailbox2.received.length, 0)
+    })
+
+    it('should preserve message time tag', function() {
+      helpers.assertPreservesTimeTag(patch.createObject('unpack', ['f', 33]), [88])
+    })
+  })
+
   describe('[select]', function() {
 
     it('should create by default [sel 0]', function() {
