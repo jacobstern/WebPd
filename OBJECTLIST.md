@@ -63,6 +63,7 @@
 - random
 - receive
 - rmstodb
+- route
 - s
 - samplerate~
 - sel

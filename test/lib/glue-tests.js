@@ -1881,4 +1881,110 @@ describe('glue', function() {
       assert.deepEqual(mailbox.received[4][0], 8)
     })
   })
+
+  describe('[route]', function() {
+
+    var mailbox1, mailbox2, mailbox3, mailbox4
+
+    beforeEach(function() {
+      mailbox1 = patch.createObject('testingmailbox')
+      mailbox2 = patch.createObject('testingmailbox')
+      mailbox3 = patch.createObject('testingmailbox')
+      mailbox4 = patch.createObject('testingmailbox')
+    })
+
+    it('should route list of floats based on its first argument', function() {
+      var route = patch.createObject('route', [-1, 3, 4])
+      route.o(0).connect(mailbox1.i(0))
+      route.o(1).connect(mailbox2.i(0))
+      route.o(2).connect(mailbox3.i(0))
+      route.o(3).connect(mailbox4.i(0))
+
+      route.i(0).message([-1, 3, 7])
+      route.i(0).message([9, 4, 2])
+      route.i(0).message([4])
+      route.i(0).message([3, 8, 4, 2, 0])
+      route.i(0).message([])
+      route.i(0).message(['walk', 'the', 'dog'])
+
+      assert.deepEqual(mailbox1.received, [[3, 7]])
+      assert.deepEqual(mailbox2.received, [[8, 4, 2, 0]])
+      assert.deepEqual(mailbox3.received, [['bang']])
+      assert.deepEqual(mailbox4.received, [[9, 4, 2], ['bang'], ['walk', 'the', 'dog']])
+    })
+
+    it('should route list of symbols based on its first argument', function() {
+      var route = patch.createObject('route', ['foo', 'bar'])
+      route.o(0).connect(mailbox1.i(0))
+      route.o(1).connect(mailbox2.i(0))
+      route.o(2).connect(mailbox3.i(0))
+
+      route.i(0).message(['bar', 'test', '1'])
+      route.i(0).message(['baz', 'other', 'test'])
+      route.i(0).message(['foo', 'further', 'testing'])
+      route.i(0).message([])
+      route.i(0).message([3, 8, 4, 2, 0])
+
+      assert.deepEqual(mailbox1.received, [['further', 'testing']])
+      assert.deepEqual(mailbox2.received, [['test', '1']])
+      assert.deepEqual(mailbox3.received, [['baz', 'other', 'test'], ['bang'], [3, 8, 4, 2, 0]])
+    })
+
+    it('should route list of symbols based on its first argument', function() {
+      var route = patch.createObject('route', ['foo', 'bar'])
+      route.o(0).connect(mailbox1.i(0))
+      route.o(1).connect(mailbox2.i(0))
+      route.o(2).connect(mailbox3.i(0))
+
+      route.i(0).message(['bar', 'test', '1'])
+      route.i(0).message(['baz', 'other', 'test'])
+      route.i(0).message(['foo', 'further', 'testing'])
+      route.i(0).message([])
+      route.i(0).message([3, 8, 4, 2, 0])
+
+      assert.deepEqual(mailbox1.received, [['further', 'testing']])
+      assert.deepEqual(mailbox2.received, [['test', '1']])
+      assert.deepEqual(mailbox3.received, [['baz', 'other', 'test'], ['bang'], [3, 8, 4, 2, 0]])
+    })
+
+    it('should route special type symbols', function() {
+      var route = patch.createObject('route', ['float', 'bang', 'list', 'symbol'])
+      route.o(0).connect(mailbox1.i(0))
+      route.o(1).connect(mailbox2.i(0))
+      route.o(2).connect(mailbox3.i(0))
+      route.o(3).connect(mailbox4.i(0))
+
+      route.i(0).message(['bar', 'test', '1'])
+      route.i(0).message(['float', 'other', 'test'])
+      route.i(0).message([1.7])
+      route.i(0).message([])
+      route.i(0).message(['bang'])
+      route.i(0).message(['om'])
+
+      assert.deepEqual(mailbox1.received, [['other', 'test'], [1.7]])
+      assert.deepEqual(mailbox2.received, [['bang'], ['bang']])
+      assert.deepEqual(mailbox3.received, [['bar', 'test', '1']])
+      assert.deepEqual(mailbox4.received, [['om']])
+    })
+
+    it('should match the first applicable argument', function() {
+      var route = patch.createObject('route', ['list', 'bar'])
+      route.o(0).connect(mailbox1.i(0))
+      route.o(1).connect(mailbox2.i(0))
+      route.o(2).connect(mailbox3.i(0))
+
+      route.i(0).message([1, 2])
+      route.i(0).message(['bar', 'baz'])
+      route.i(0).message(['list'])
+
+      assert.deepEqual(mailbox1.received, [[1, 2], ['bar', 'baz'], ['bang']])
+      assert.deepEqual(mailbox2.received, [])
+      assert.deepEqual(mailbox3.received, [])
+    })
+
+    it('should preserve message time tag', function() {
+      helpers.assertPreservesTimeTag(patch.createObject('route', [1, 2]), [1])
+      helpers.assertPreservesTimeTag(patch.createObject('route', ['bang']), [])
+    })
+  })
 })
