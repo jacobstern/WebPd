@@ -30,6 +30,19 @@ describe('dsp.throw~/catch~', function() {
     })
   })
 
+  it('should be able to create [throw~] with no [catch~]', function(done) {
+    var patch = Pd.createPatch()
+      , sig = patch.createObject('sig~', [11])
+      , throwObj = patch.createObject('throw~', ['foo'])
+
+    sig.o(0).connect(throwObj.i(0))
+
+    helpers.expectSamples(function() {}, [
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ], done)
+  })
+
   it('should send an audio signal from [throw~] to [catch~]', function(done) {
       var patch = Pd.createPatch()
       , throwObj = patch.createObject('throw~')
@@ -82,3 +95,45 @@ describe('dsp.throw~/catch~', function() {
   })
 })
 
+describe('dsp.send~/receive~', function() {
+
+  afterEach(helpers.afterEach)
+
+  it('should output nothing by default', function(done) {
+    var patch = Pd.createPatch()
+      , receive = patch.createObject('receive~')
+      , dac = patch.createObject('dac~')
+
+    receive.o(0).connect(dac.i(0))
+
+    helpers.expectSamples(function() {}, [
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ], done)
+  })
+
+  it('should throw if duplicate names are used', function() {
+    var patch = Pd.createPatch()
+      , send = patch.createObject('send~', ['foo'])
+
+    assert.throws(function() {
+      patch.createObject('send~', ['foo'])
+    })
+  })
+
+  it('should send an audio signal from [send~] to [receive~]', function(done) {
+    var patch = Pd.createPatch()
+    , send = patch.createObject('send~')
+    , receive = patch.createObject('receive~')
+    , sig = patch.createObject('sig~', [11])
+    , dac = patch.createObject('dac~')
+
+    sig.o(0).connect(send.i(0))
+    receive.o(0).connect(dac.i(0))
+
+    helpers.expectSamples(function() {}, [
+      [11, 11, 11, 11, 11],
+      [0, 0, 0, 0, 0]
+    ], done)
+  })
+})
