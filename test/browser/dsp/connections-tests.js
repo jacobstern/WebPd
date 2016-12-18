@@ -93,6 +93,21 @@ describe('dsp.throw~/catch~', function() {
 
     helpers.expectSamples(function() {}, expected, done)
   })
+
+  it('should not throw if a [throw~] has no input', function(done) {
+    var patch = Pd.createPatch()
+      , throwObj = patch.createObject('throw~', ['foo'])
+      , catchObj = patch.createObject('catch~', ['foo'])
+      , sig = patch.createObject('sig~', [11])
+      , dac = patch.createObject('dac~')
+
+    sig.o(0).connect(dac.i(0))
+
+    helpers.expectSamples(function() {}, [
+      [11, 11, 11, 11, 11],
+      [0, 0, 0, 0, 0]
+    ], done)
+  })
 })
 
 describe('dsp.send~/receive~', function() {
